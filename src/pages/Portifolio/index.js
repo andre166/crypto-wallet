@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { makeStyles } from "@mui/styles";
 import {
   Button,
@@ -38,7 +38,10 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { styled } from "@mui/material/styles";
 import AtivoDialog from "./AtivoDialog";
 import { getToken } from "../../services/cmcService";
-import { getUserTokenList } from "../../services/userTokenService";
+import {
+  getUserTokenList,
+  countUserAportesInfo,
+} from "../../services/userTokenService";
 import { getOrderList } from "../../services/orderService";
 import { mockedUser } from "../../utils/mockedUser";
 import LoadingPage from "../../Components/LoadingPage";
@@ -49,10 +52,15 @@ import PieChart from "./PieChart";
 import BarChart from "./BarChart";
 import DeleteAtivoDialogWrapper from "./DeleteAtivoDialog";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { currencyFormatterGeral } from "../../utils/currencyHelpers";
+import {
+  currencyFormatterGeral,
+  currencyFormatterValorFull,
+  currencyFormatter,
+} from "../../utils/currencyHelpers";
 import AtivosGrid from "./AtivosGrid";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import DolContext from "../../context/DollarContext";
 
 const useStyles = makeStyles({
   gridContainerGeral: {
@@ -103,7 +111,11 @@ function TabPanel(props) {
   );
 }
 
-function Portifolio() {
+function Portifolio(props) {
+  let { usdPrice } = useContext(DolContext);
+  const classes = useStyles();
+
+  const [userAporteInfo, setUserAporteInfo] = useState({});
   const [tabValue, setTabValue] = useState(0);
   const [containerLoading, setContainerLoading] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -134,6 +146,7 @@ function Portifolio() {
     console.log("values[1]", values[1]);
 
     let ordersResp = {};
+    let countResp = {};
 
     if (values[1]?.length > 0) {
       values[1].map((e) => {
@@ -143,13 +156,17 @@ function Portifolio() {
         }
       });
 
-      ordersResp = await getOrderList(
+      ordersResp = await getOrderList(userID, values[1][0].id_user_cripto);
+
+      let paramsToCountAportesInfo = {
         userID,
-        values[1][0].id_user_cripto_ativos
-      );
+        user_cripto: values[1][0].id_user_cripto,
+      };
+      countResp = await countUserAportesInfo(paramsToCountAportesInfo);
     }
 
-    setOrders(ordersResp);
+    setUserAporteInfo(countResp);
+    setOrders(ordersResp || {});
     setTokenList(values[0]?.data || []);
     setUserTokenList(values[1] || []);
     setLoading(false);
@@ -183,21 +200,24 @@ function Portifolio() {
     let userID = mockedUser().id;
 
     setTabValue(newValue);
+
     setContainerLoading(true);
 
-    let ordersResp = await getOrderList(
+    let paramsToCountAportesInfo = {
       userID,
-      selectedAtivo.id_user_cripto_ativos
-    );
+      user_cripto: selectedAtivo.id_user_cripto,
+    };
 
-    setOrders(ordersResp);
+    const values = await promisseAllWrapper([
+      countUserAportesInfo(paramsToCountAportesInfo),
+      getOrderList(userID, selectedAtivo.id_user_cripto),
+    ]);
+
+    setUserAporteInfo(values[0]);
+    setOrders(values[1]);
 
     setContainerLoading(false);
-    // setTimeout(() => {
-    // }, 1000);
   };
-
-  const classes = useStyles();
 
   const onCrudEnd = async (type) => {
     let userID = mockedUser().id;
@@ -212,7 +232,7 @@ function Portifolio() {
 
       const ordersResp = await getOrderList(
         userID,
-        selectedAtivo.id_user_cripto_ativos
+        selectedAtivo.id_user_cripto
       );
       setOrders(ordersResp);
 
@@ -227,6 +247,9 @@ function Portifolio() {
     noBorder,
     isZero,
     isUserSaldo,
+    noPercent,
+    noIcon,
+    invertIcon,
   }) => (
     <Box
       style={{
@@ -250,10 +273,20 @@ function Portifolio() {
           }
           style={{ margin: 0 }}
         >
-          {isZero && isZero !== "default" ? "0.00%" : subtitle}{" "}
-          {!isZero && (
+          {isZero && isZero !== "default"
+            ? noPercent
+              ? currencyFormatterValorFull(0)
+              : "0.00%"
+            : subtitle}{" "}
+          {!isZero && !noIcon && (
             <>
               {isBiggerComparison ? (
+                invertIcon ? (
+                  <ArrowDownwardIcon sx={{ fontSize: 16 }} />
+                ) : (
+                  <ArrowUpwardIcon sx={{ fontSize: 16 }} />
+                )
+              ) : invertIcon ? (
                 <ArrowUpwardIcon sx={{ fontSize: 16 }} />
               ) : (
                 <ArrowDownwardIcon sx={{ fontSize: 16 }} />
@@ -268,7 +301,10 @@ function Portifolio() {
   );
 
   const renderAtivoPrice = () => {
-    let price = userTokenList[tabValue]?.info?.quote?.USD?.price;
+    let price = parseFloat(
+      userTokenList[tabValue]?.info?.quote?.USD?.price.toFixed(2)
+    );
+    let valorAtual = parseFloat((price * usdPrice).toFixed(2));
     let oneHour =
       userTokenList[tabValue]?.info?.quote?.USD?.percent_change_1h?.toFixed(2) +
       "%";
@@ -293,11 +329,18 @@ function Portifolio() {
     return (
       <Box sx={{ p: 1, display: "flex" }}>
         <InfoAtivoPrice
+          title="Preço"
+          subtitle={currencyFormatterGeral(valorAtual)}
+          isBiggerComparison={isBiggerOneHour}
+          isZero={"default"}
+        />
+
+        {/* <InfoAtivoPrice
           title="USD"
           subtitle={currencyFormatterGeral(price, "en-US", "USD")}
           isBiggerComparison={isBiggerOneHour}
           isZero={"default"}
-        />
+        /> */}
 
         <InfoAtivoPrice
           title="1H"
@@ -324,68 +367,63 @@ function Portifolio() {
   };
 
   const renderUserGeralInfo = () => {
-    let price = userTokenList[tabValue]?.info?.quote?.USD?.price?.toFixed(2);
-    let oneHour =
-      userTokenList[tabValue]?.info?.quote?.USD?.percent_change_1h?.toFixed(2) +
-      "%";
-    let oneWeek =
-      userTokenList[tabValue]?.info?.quote?.USD?.percent_change_24h?.toFixed(
-        2
-      ) + "%";
-    let oneDay =
-      userTokenList[tabValue]?.info?.quote?.USD?.percent_change_7d?.toFixed(2) +
-      "%";
+    let price = userTokenList[tabValue]?.info?.quote?.USD?.price;
+    const { mediaAporte = 0, saldo = 0, totalAporte = 0 } = userAporteInfo;
+    let ativoPrice = price * usdPrice;
 
-    let isBiggerOneHour = oneHour.charAt(0) !== "-";
-    let isBiggerOneDay = oneDay.charAt(0) !== "-";
-    let isBiggerOneWeek = oneWeek.charAt(0) !== "-";
+    let valorAtual = price * usdPrice;
 
-    let zeroRegex = /(-0.00%|0.00%)/g;
+    let isBiggerMedia = mediaAporte > ativoPrice;
 
-    let isZeroOneHour = oneHour.match(zeroRegex);
-    let isZeroOneDay = oneDay.match(zeroRegex);
-    let isZeroOneWeek = oneWeek.match(zeroRegex);
+    valorAtual = valorAtual * saldo;
+
+    let isBiggerValorAtual = valorAtual > totalAporte;
+    let diference = valorAtual - totalAporte;
+
+    let isLucro = diference.toString().charAt(0) !== "-";
+
+    let isZeroValorAtual = valorAtual == 0;
+    let isZeroDiference = diference == 0;
+    let isZeroMediaAporte = mediaAporte == 0 || !mediaAporte;
 
     return (
       <Box sx={{ p: 1, display: "flex" }}>
         <InfoAtivoPrice
           title="Aporte"
-          subtitle={currencyFormatterGeral(price, "en-US", "USD")}
-          isBiggerComparison={isBiggerOneHour}
+          subtitle={currencyFormatterValorFull(totalAporte)}
           isZero={"default"}
           isUserSaldo
         />
         <InfoAtivoPrice
           title="Valor atual"
-          subtitle={currencyFormatterGeral(price, "en-US", "USD")}
-          isBiggerComparison={isBiggerOneHour}
-          isZero={"default"}
-          isUserSaldo
+          subtitle={currencyFormatterValorFull(valorAtual)}
+          isBiggerComparison={isBiggerValorAtual}
+          isZero={isZeroValorAtual}
+          noPercent={isZeroValorAtual}
         />
 
         <InfoAtivoPrice
           title="Lucro/Prejuízo"
-          subtitle={currencyFormatterGeral(price, "en-US", "USD")}
-          isBiggerComparison={isBiggerOneHour}
-          isZero={"default"}
-          isUserSaldo
+          subtitle={currencyFormatterValorFull(diference?.toFixed(2))}
+          isBiggerComparison={isLucro}
+          isZero={isZeroDiference}
+          noPercent={isZeroDiference}
         />
 
         <InfoAtivoPrice
           title="Preço Médio"
-          subtitle={oneHour}
-          isBiggerComparison={isBiggerOneHour}
-          isZero={isZeroOneHour}
-          isUserSaldo
+          subtitle={currencyFormatterValorFull(mediaAporte)}
+          isBiggerComparison={!isBiggerMedia}
+          isZero={isZeroMediaAporte}
+          noPercent={isZeroMediaAporte}
+          invertIcon
         />
 
         <InfoAtivoPrice
           title="Saldo"
-          subtitle={oneDay}
-          isBiggerComparison={isBiggerOneDay}
-          isZero={isZeroOneDay}
+          subtitle={currencyFormatterValorFull(saldo, "decimal")}
           noBorder
-          isUserSaldo
+          isZero={"default"}
         />
       </Box>
     );
@@ -638,101 +676,102 @@ function Portifolio() {
                     onChange={handleChangeTab}
                     variant="scrollable"
                     scrollButtons="auto"
-                    // variant="fullWidth"
                     sx={{ width: "100%", position: "relative" }}
                   >
                     {userTokenList.map((token) => (
                       <StyledTab
-                        key={`user-token-tab-${token.name}`}
-                        label={`${token.symbol}`}
+                        key={`user-token-tab-${token.info.symbol}`}
+                        label={`${token.info.symbol}`}
                       />
                     ))}
                   </StyledTabs>
                 </Paper>
 
-                <Box
-                  sx={{
-                    mt: 1,
-                  }}
-                >
+                {!containerLoading && (
                   <Box
                     sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      mt: 1,
                     }}
                   >
-                    <Card>{renderAtivoPrice()}</Card>
-                    <Card>{renderUserGeralInfo()}</Card>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      mt: 0.6,
-                    }}
-                  >
-                    <Box>
-                      <DeleteAtivoDialogWrapper
-                        ativo={userTokenList[tabValue]}
-                        onCrudEnd={onCrudEnd}
-                        handleOpenSnackBar={handleOpenSnackBar}
-                      />
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Card>{renderAtivoPrice()}</Card>
+                      <Card>{renderUserGeralInfo()}</Card>
                     </Box>
 
                     <Box
                       sx={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "flex-end",
+                        justifyContent: "space-between",
+                        mt: 0.6,
                       }}
                     >
-                      <Box sx={{ mx: 1 }}>
-                        <OrdemDialog
+                      <Box>
+                        <DeleteAtivoDialogWrapper
                           ativo={userTokenList[tabValue]}
                           onCrudEnd={onCrudEnd}
                           handleOpenSnackBar={handleOpenSnackBar}
-                          crudType="ADD"
                         />
                       </Box>
-                      <Box sx={{ mx: 1 }}>
-                        <Tooltip title="Abrir ativo no Coin Market Cap">
-                          <IconButton size="small">
-                            <OpenInNewIcon
-                              variant="outlined"
-                              onClick={() =>
-                                window.open(
-                                  `https://coinmarketcap.com/currencies/${userTokenList[tabValue].slug}/`,
-                                  "_blank"
-                                )
-                              }
-                            />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
 
-                      <Box sx={{ mx: 1 }}>
-                        <Tooltip title="Download excel">
-                          <IconButton
-                            size="small"
-                            disabled={orders?.length == 0}
-                          >
-                            <FileDownloadIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                      <Box sx={{ ml: 1 }}>
-                        <Tooltip title="Gerar relatório">
-                          <IconButton disabled={orders?.length == 0}>
-                            <PictureAsPdfIcon />
-                          </IconButton>
-                        </Tooltip>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <Box sx={{ mx: 1 }}>
+                          <OrdemDialog
+                            ativo={userTokenList[tabValue]}
+                            onCrudEnd={onCrudEnd}
+                            handleOpenSnackBar={handleOpenSnackBar}
+                            crudType="ADD"
+                          />
+                        </Box>
+                        <Box sx={{ mx: 1 }}>
+                          <Tooltip title="Abrir ativo no Coin Market Cap">
+                            <IconButton size="small">
+                              <OpenInNewIcon
+                                variant="outlined"
+                                onClick={() =>
+                                  window.open(
+                                    `https://coinmarketcap.com/currencies/${userTokenList[tabValue].slug}/`,
+                                    "_blank"
+                                  )
+                                }
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+
+                        <Box sx={{ mx: 1 }}>
+                          <Tooltip title="Download excel">
+                            <IconButton
+                              size="small"
+                              disabled={orders?.length == 0}
+                            >
+                              <FileDownloadIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                        <Box sx={{ ml: 1 }}>
+                          <Tooltip title="Gerar relatório">
+                            <IconButton disabled={orders?.length == 0}>
+                              <PictureAsPdfIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </Box>
                     </Box>
                   </Box>
-                </Box>
+                )}
 
                 <Paper
                   sx={{

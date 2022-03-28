@@ -2,6 +2,7 @@ import axios from "axios";
 
 const getToken = async () => {
   const response = await axios.get(
+    // "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=20",
     "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=3500",
     {
       headers: {

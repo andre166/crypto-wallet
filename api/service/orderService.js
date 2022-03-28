@@ -4,6 +4,7 @@ import generateQueryArray from "../utils/generateQueryArray.js";
 // data_compra date
 // aporte float
 // cotacao_na_compra float
+// saldo float
 // fk_user_cripto_ativos int
 // fk_user int
 
@@ -14,10 +15,10 @@ const addOrder = async (params, syncQuery) => {
 };
 
 const getOrders = async (params, syncQuery) => {
-  const { fk_user, fk_user_cripto_ativos } = params;
+  const { fk_user, fk_user_cripto } = params;
 
   return syncQuery(
-    `select * from orders where fk_user = ${fk_user} and fk_user_cripto_ativos = ${fk_user_cripto_ativos}`
+    `select * from orders where fk_user = ${fk_user} and fk_user_cripto = ${fk_user_cripto}`
   );
 };
 

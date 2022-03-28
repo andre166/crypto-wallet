@@ -17,4 +17,12 @@ const getUserTokenList = async (id) => {
   return response.data;
 };
 
-export { addTokenOnUser, getUserTokenList };
+const countUserAportesInfo = async (params) => {
+  const response = await axios
+    .post(`${localHost}/user-token/users-aporte-info`, params)
+    .catch((error) => error);
+
+  return response.data;
+};
+
+export { addTokenOnUser, getUserTokenList, countUserAportesInfo };

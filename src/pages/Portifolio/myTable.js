@@ -17,6 +17,7 @@ import moment from "moment";
 import {
   currencyFormatterValorFull,
   currencyFormatter,
+  FloatToBrlNumber,
 } from "../../utils/currencyHelpers";
 
 function descendingComparator(a, b, orderBy) {
@@ -189,10 +190,7 @@ export default function EnhancedTable({
                     </TableCell>
                     <TableCell align="center">
                       {currencyVisibility
-                        ? currencyFormatter(
-                            row.aporte * row.cotacao_na_compra,
-                            "decimal"
-                          )
+                        ? FloatToBrlNumber(row.saldo)
                         : "******"}
                     </TableCell>
                     <TableCell align="center">

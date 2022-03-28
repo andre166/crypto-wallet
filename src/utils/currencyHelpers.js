@@ -1,4 +1,4 @@
-const currencyFormatterValorFull = (value) => {
+const currencyFormatterValorFull = (value, style) => {
   let isLargeFraction = false;
 
   if (parseFloat(value) < 0.1 && parseFloat(value) !== 0) {
@@ -6,7 +6,7 @@ const currencyFormatterValorFull = (value) => {
   }
 
   const amount = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
+    style: style || "currency",
     currency: "BRL",
     maximumFractionDigits: isLargeFraction ? 7 : 2,
   }).format(value);

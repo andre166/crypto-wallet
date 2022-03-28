@@ -172,11 +172,7 @@ function SimpleDialog({ onClose, open, rest }) {
 
   const onSubmit = async () => {
     let params = {
-      id_user_cripto_ativos: null,
-      name: value.name,
-      slug: value.slug,
-      symbol: value.symbol,
-      token_address: value.token_address || "",
+      id_user_cripto: null,
       cmc_id: value.id,
       user_fk: mockedUser().id,
     };
@@ -199,7 +195,7 @@ function SimpleDialog({ onClose, open, rest }) {
             setInputValue(newInputValue);
           }}
           getOptionDisabled={(option) => {
-            if (userTokenList.find((e) => e.name == option.name)) {
+            if (userTokenList.find((e) => e.info.name == option.name)) {
               return true;
             }
           }}

@@ -1,4 +1,10 @@
-import { addToken, getTokenList } from "../service/userTokenService.js";
+import {
+  addToken,
+  getTokenList,
+  countAporte,
+  countMedia,
+  countSaldo,
+} from "../service/userTokenService.js";
 import { setRedis, getRedis, delRedis } from "../middleware/redisConfig.js";
 import connAndQuery from "../utils/connAndQuery.js";
 import CmcController from "./cmcController.js";
@@ -88,6 +94,32 @@ class UserTokenController {
     if (!CONN) conn.destroy();
 
     return finalTokenList;
+  }
+
+  async countAporte(params) {
+    const { conn, syncQuery } = connAndQuery();
+
+    const resp = await countAporte(params, syncQuery);
+    conn.destroy();
+
+    return resp;
+  }
+
+  async countMedia(params) {
+    const { conn, syncQuery } = connAndQuery();
+
+    const resp = await countMedia(params, syncQuery);
+    conn.destroy();
+
+    return resp;
+  }
+  async countSaldo(params) {
+    const { conn, syncQuery } = connAndQuery();
+
+    const resp = await countSaldo(params, syncQuery);
+    conn.destroy();
+
+    return resp;
   }
 }
 

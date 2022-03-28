@@ -11,16 +11,13 @@ router.post("/add", async function (req, res) {
   res.send(resp);
 });
 
-router.get(
-  "/getOrders/:fk_user/:fk_user_cripto_ativos",
-  async function (req, res) {
-    const orderController = new OrderController();
+router.get("/getOrders/:fk_user/:fk_user_cripto", async function (req, res) {
+  const orderController = new OrderController();
 
-    let resp = await orderController.getOrders(req.params);
+  let resp = await orderController.getOrders(req.params);
 
-    res.send(resp);
-  }
-);
+  res.send(resp);
+});
 
 router.delete("/delete/:id", async function (req, res) {
   const orderController = new OrderController();

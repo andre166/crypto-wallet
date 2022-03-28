@@ -83,7 +83,8 @@ function OrdemDialog({ onClose, open, rest }) {
       data_compra,
       aporte,
       cotacao_na_compra,
-      fk_user_cripto_ativos,
+      saldo,
+      fk_user_cripto,
       user_fk,
     } = {},
     ...rest
@@ -97,7 +98,8 @@ function OrdemDialog({ onClose, open, rest }) {
       cotacao_na_compra: cotacao_na_compra
         ? currencyToFloat(cotacao_na_compra)
         : null,
-      fk_user_cripto_ativos: fk_user_cripto_ativos || null,
+      saldo: saldo || null,
+      fk_user_cripto: fk_user_cripto || null,
       user_fk: user_fk || null,
     };
 
@@ -105,9 +107,12 @@ function OrdemDialog({ onClose, open, rest }) {
   };
 
   const onSubmit = async (values) => {
+    let saldo = generateSaldo(values.aporte, values.cotacao_na_compra);
+
     let params = {
       id_order: null,
-      fk_user_cripto_ativos: ativo?.id_user_cripto_ativos,
+      saldo,
+      fk_user_cripto: ativo?.id_user_cripto,
       user_fk: mockedUser().id,
     };
 
@@ -142,7 +147,17 @@ function OrdemDialog({ onClose, open, rest }) {
     EDIT: "Editar ordem",
   };
 
-  crudType == "EDIT" && console.log("order", order);
+  const generateSaldo = (aporte, cotacao) => {
+    let n1 = currencyToFloat(aporte);
+    let n2 = currencyToFloat(cotacao);
+
+    let s = n1 / n2;
+
+    if (!s || s == "Infinity") {
+      s = 0;
+    }
+    return s || 0;
+  };
 
   return (
     <Dialog onClose={handleClose} open={open}>
@@ -186,7 +201,6 @@ function OrdemDialog({ onClose, open, rest }) {
                     }}
                   />
                 </LocalizationProvider>
-
                 <NumberFormat
                   label="Aporte"
                   variant="outlined"
@@ -200,7 +214,6 @@ function OrdemDialog({ onClose, open, rest }) {
                   fullWidth
                   style={{ margin: "1.5em 0px" }}
                 />
-
                 <NumberFormat
                   label="Cotação na compra"
                   variant="outlined"
@@ -213,6 +226,15 @@ function OrdemDialog({ onClose, open, rest }) {
                   margin="dense"
                   fullWidth
                 />
+                {console.log("values.aporte", values.aporte)}
+                <Divider sx={{ mt: 2, mb: 1 }} />
+                <Box>
+                  Saldo:{" "}
+                  {generateSaldo(
+                    values.aporte,
+                    values.cotacao_na_compra
+                  ).toFixed(2)}
+                </Box>
               </Box>
 
               <DialogActions>
@@ -233,7 +255,7 @@ function OrdemDialog({ onClose, open, rest }) {
                     values.aporte.length == 0
                   }
                 >
-                  Cadastrar
+                  {crudType === "ADD" ? "Cadastrar" : "Editar"}
                 </Button>
               </DialogActions>
             </Form>
