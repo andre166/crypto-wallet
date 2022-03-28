@@ -6,6 +6,7 @@ import {
   cmcRoutes,
   userTokenRoutes,
   orderRoutes,
+  restRoutes,
 } from "./routes/routesCore.js";
 import { Server } from "socket.io";
 
@@ -28,6 +29,7 @@ io.on("connection", (socket) => {
 app.use("/cmc", cmcRoutes(io));
 app.use("/user-token", userTokenRoutes);
 app.use("/order", orderRoutes);
+app.use("/rest", restRoutes(app));
 
 app.listen(PORT, function (req, res) {
   console.log("Server on na porta: ", PORT);

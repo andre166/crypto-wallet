@@ -59,9 +59,11 @@ import {
 } from "../../utils/currencyHelpers";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import CurrencyExchangeIcon from "@mui/icons-material/CurrencyExchange";
 
 function OrdemDialog({ onClose, open, rest }) {
-  const { ativo, handleOpenSnackBar, onCrudEnd, crudType, order } = rest;
+  const { ativo, handleOpenSnackBar, onCrudEnd, crudType, order, usdPrice } =
+    rest;
 
   const [dateError, setDateError] = useState(false);
 
@@ -213,20 +215,46 @@ function OrdemDialog({ onClose, open, rest }) {
                   margin="dense"
                   fullWidth
                   style={{ margin: "1.5em 0px" }}
+                  startIcon={<CurrencyExchangeIcon />}
                 />
-                <NumberFormat
-                  label="Cotação na compra"
-                  variant="outlined"
-                  format={(e) => currencyFormatter(e)}
-                  value={values.cotacao_na_compra}
-                  name="cotacao_na_compra"
-                  thousandSeparator
-                  onChange={handleChange}
-                  customInput={TextField}
-                  margin="dense"
-                  fullWidth
-                />
-                {console.log("values.aporte", values.aporte)}
+                <Box>
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      marginTop: 15,
+                      marginRight: 18,
+                      zIndex: 4,
+                    }}
+                  >
+                    <Tooltip title="Valor atual do ativo">
+                      <IconButton
+                        onClick={() =>
+                          setFieldValue(
+                            "cotacao_na_compra",
+                            ativo?.info?.quote?.USD?.price * usdPrice * 100
+                          )
+                        }
+                      >
+                        <CurrencyExchangeIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </div>
+                  <NumberFormat
+                    endIcon={<div>a</div>}
+                    label="Cotação na compra"
+                    variant="outlined"
+                    format={(e) => currencyFormatter(e)}
+                    value={values.cotacao_na_compra}
+                    name="cotacao_na_compra"
+                    thousandSeparator
+                    onChange={handleChange}
+                    customInput={TextField}
+                    margin="dense"
+                    fullWidth
+                  />
+                </Box>
+
                 <Divider sx={{ mt: 2, mb: 1 }} />
                 <Box>
                   Saldo:{" "}

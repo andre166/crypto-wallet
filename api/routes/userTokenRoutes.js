@@ -22,15 +22,14 @@ router.get("/get-user-token-list/:id", async function (req, res) {
 
 router.post("/users-aporte-info", async function (req, res) {
   const userTokenController = new UserTokenController();
-  let { userID, skipAporte, skipMediaAporte, skipSaldo, user_cripto } =
-    req.body;
+  let { skipAporte, skipMedia, skipSaldo } = req.body;
 
   let reqArr = [];
 
   if (!skipAporte) {
     reqArr.push(userTokenController.countAporte(req.body));
   }
-  if (!skipMediaAporte) {
+  if (!skipMedia) {
     reqArr.push(userTokenController.countMedia(req.body));
   }
 

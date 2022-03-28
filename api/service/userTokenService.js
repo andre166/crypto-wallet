@@ -18,6 +18,12 @@ const getTokenList = async (id, syncQuery) => {
 const countAporte = async (params, syncQuery) => {
   let { userID, user_cripto } = params;
 
+  if (!user_cripto) {
+    return syncQuery(
+      `select SUM(aporte) as totalAporte from orders where fk_user = ${userID}`
+    );
+  }
+
   return syncQuery(
     `select SUM(aporte) as totalAporte from orders where fk_user = ${userID} and fk_user_cripto = ${user_cripto}`
   );
@@ -25,6 +31,7 @@ const countAporte = async (params, syncQuery) => {
 
 const countMedia = async (params, syncQuery) => {
   let { userID, user_cripto } = params;
+
   return syncQuery(
     `select AVG(cotacao_na_compra) as media from orders where fk_user = ${userID}  and fk_user_cripto = ${user_cripto}`
   );
@@ -32,6 +39,12 @@ const countMedia = async (params, syncQuery) => {
 
 const countSaldo = async (params, syncQuery) => {
   let { userID, user_cripto } = params;
+
+  if (!user_cripto) {
+    return syncQuery(
+      `select SUM(saldo) as saldo from orders where fk_user = ${userID}`
+    );
+  }
 
   return syncQuery(
     `select SUM(saldo) as saldo from orders where fk_user = ${userID}  and fk_user_cripto = ${user_cripto}`

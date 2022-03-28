@@ -191,15 +191,19 @@ function App({ socket }) {
                   sx={{
                     ml: 4,
                     mr: 2,
-                    background: "#46a1fc",
+                    background: "#68b2fcc5",
                     py: 0.5,
-                    px: 1.4,
+                    px: 1.8,
                     borderRadius: 2,
+                    fontWeight: 500,
+                    letterSpacing: 1,
                   }}
                 >
-                  <div>USD</div>
+                  <div style={{ fontSize: 15 }}>USD</div>
 
-                  <div>{currencyFormatterValorFull(dollarPrice)}</div>
+                  <div style={{ fontSize: 16 }}>
+                    {currencyFormatterValorFull(dollarPrice)}
+                  </div>
                 </Box>
                 <IconButton color="inherit" sx={{ mr: 2 }}>
                   <Badge badgeContent={4} color="warning">

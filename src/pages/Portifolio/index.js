@@ -47,7 +47,7 @@ import { mockedUser } from "../../utils/mockedUser";
 import LoadingPage from "../../Components/LoadingPage";
 import promisseAllWrapper from "../../utils/promisseAllWrapper";
 import MuiAlert from "@mui/material/Alert";
-import OrdemDialog from "./OrdemDialog";
+import OrderDialog from "./OrderDialog";
 import PieChart from "./PieChart";
 import BarChart from "./BarChart";
 import DeleteAtivoDialogWrapper from "./DeleteAtivoDialog";
@@ -61,6 +61,42 @@ import AtivosGrid from "./AtivosGrid";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DolContext from "../../context/DollarContext";
+import DownloadToXls from "../../Components/DownloadToXls";
+import DialogPrintPdf from "./DialogPrintPdf";
+import MenuExplorer from "./MenuExplorer";
+import LinkIcon from "@mui/icons-material/Link";
+
+const columns = [
+  {
+    id: "data_compra",
+    disablePadding: true,
+    label: "Data da compra",
+  },
+  {
+    id: "cotacao_na_compra",
+
+    disablePadding: false,
+    label: "Cotação na compra",
+  },
+  {
+    id: "aporte",
+
+    disablePadding: false,
+    label: "Aporte",
+  },
+  {
+    id: "saldo",
+
+    disablePadding: false,
+    label: "Saldo",
+  },
+  {
+    id: "actions",
+
+    disablePadding: false,
+    label: "Ação",
+  },
+];
 
 const useStyles = makeStyles({
   gridContainerGeral: {
@@ -116,6 +152,7 @@ function Portifolio(props) {
   const classes = useStyles();
 
   const [userAporteInfo, setUserAporteInfo] = useState({});
+  const [userInfoGeral, setUserInfoGeral] = useState({});
   const [tabValue, setTabValue] = useState(0);
   const [containerLoading, setContainerLoading] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -130,6 +167,8 @@ function Portifolio(props) {
     message: "",
   });
 
+  const tabAtivo = userTokenList[tabValue];
+
   useEffect(() => {
     loadPage();
   }, []);
@@ -137,13 +176,21 @@ function Portifolio(props) {
   const loadPage = async () => {
     let userID = mockedUser().id;
 
+    let paramsToCountAportesAllAtivosInfo = {
+      userID,
+      skipMedia: 1,
+      skipSaldo: 1,
+    };
+
     const values = await promisseAllWrapper([
       getToken(),
       getUserTokenList(userID),
+      countUserAportesInfo(paramsToCountAportesAllAtivosInfo),
     ]);
 
     console.log("values[0]", values[0]);
     console.log("values[1]", values[1]);
+    console.log("values[2]", values[2]);
 
     let ordersResp = {};
     let countResp = {};
@@ -165,6 +212,7 @@ function Portifolio(props) {
       countResp = await countUserAportesInfo(paramsToCountAportesInfo);
     }
 
+    setUserInfoGeral(values[2] || {});
     setUserAporteInfo(countResp);
     setOrders(ordersResp || {});
     setTokenList(values[0]?.data || []);
@@ -228,13 +276,26 @@ function Portifolio(props) {
       return;
     }
     if (type == "ordem") {
-      const selectedAtivo = userTokenList[tabValue];
-
-      const ordersResp = await getOrderList(
+      let paramsToCountAportesInfo = {
         userID,
-        selectedAtivo.id_user_cripto
+        user_cripto: tabAtivo.id_user_cripto,
+      };
+
+      let paramsToCountAportesInfoGeral = {
+        userID,
+        skipMedia: 1,
+        skipSaldo: 1,
+      };
+
+      let orderResp = await getOrderList(userID, tabAtivo.id_user_cripto);
+      let countResp = await countUserAportesInfo(paramsToCountAportesInfo);
+      let countGeralResp = await countUserAportesInfo(
+        paramsToCountAportesInfoGeral
       );
-      setOrders(ordersResp);
+
+      setUserAporteInfo(countResp || {});
+      setUserInfoGeral(countGeralResp || {});
+      setOrders(orderResp);
 
       return;
     }
@@ -301,20 +362,14 @@ function Portifolio(props) {
   );
 
   const renderAtivoPrice = () => {
-    let price = parseFloat(
-      userTokenList[tabValue]?.info?.quote?.USD?.price.toFixed(2)
-    );
+    let price = parseFloat(tabAtivo?.info?.quote?.USD?.price.toFixed(2));
     let valorAtual = parseFloat((price * usdPrice).toFixed(2));
     let oneHour =
-      userTokenList[tabValue]?.info?.quote?.USD?.percent_change_1h?.toFixed(2) +
-      "%";
+      tabAtivo?.info?.quote?.USD?.percent_change_1h?.toFixed(2) + "%";
     let oneWeek =
-      userTokenList[tabValue]?.info?.quote?.USD?.percent_change_24h?.toFixed(
-        2
-      ) + "%";
+      tabAtivo?.info?.quote?.USD?.percent_change_24h?.toFixed(2) + "%";
     let oneDay =
-      userTokenList[tabValue]?.info?.quote?.USD?.percent_change_7d?.toFixed(2) +
-      "%";
+      tabAtivo?.info?.quote?.USD?.percent_change_7d?.toFixed(2) + "%";
 
     let isBiggerOneHour = oneHour.charAt(0) !== "-";
     let isBiggerOneDay = oneDay.charAt(0) !== "-";
@@ -334,13 +389,6 @@ function Portifolio(props) {
           isBiggerComparison={isBiggerOneHour}
           isZero={"default"}
         />
-
-        {/* <InfoAtivoPrice
-          title="USD"
-          subtitle={currencyFormatterGeral(price, "en-US", "USD")}
-          isBiggerComparison={isBiggerOneHour}
-          isZero={"default"}
-        /> */}
 
         <InfoAtivoPrice
           title="1H"
@@ -367,7 +415,7 @@ function Portifolio(props) {
   };
 
   const renderUserGeralInfo = () => {
-    let price = userTokenList[tabValue]?.info?.quote?.USD?.price;
+    let price = tabAtivo?.info?.quote?.USD?.price;
     const { mediaAporte = 0, saldo = 0, totalAporte = 0 } = userAporteInfo;
     let ativoPrice = price * usdPrice;
 
@@ -400,6 +448,7 @@ function Portifolio(props) {
           isBiggerComparison={isBiggerValorAtual}
           isZero={isZeroValorAtual}
           noPercent={isZeroValorAtual}
+          isUserSaldo
         />
 
         <InfoAtivoPrice
@@ -408,6 +457,7 @@ function Portifolio(props) {
           isBiggerComparison={isLucro}
           isZero={isZeroDiference}
           noPercent={isZeroDiference}
+          isUserSaldo
         />
 
         <InfoAtivoPrice
@@ -417,6 +467,7 @@ function Portifolio(props) {
           isZero={isZeroMediaAporte}
           noPercent={isZeroMediaAporte}
           invertIcon
+          isUserSaldo
         />
 
         <InfoAtivoPrice
@@ -424,12 +475,18 @@ function Portifolio(props) {
           subtitle={currencyFormatterValorFull(saldo, "decimal")}
           noBorder
           isZero={"default"}
+          isUserSaldo
         />
       </Box>
     );
   };
 
   if (loading) return <LoadingPage />;
+
+  const dataForDownload = {
+    data: orders,
+    fields: ["data_compra", "aporte", "cotacao_na_compra", "saldo"],
+  };
 
   return (
     <div
@@ -504,7 +561,18 @@ function Portifolio(props) {
               <ListItem
                 disablePadding
                 divider
-                secondaryAction={currencyVisibility ? "R$ 90,00" : "******"}
+                secondaryAction={
+                  currencyVisibility
+                    ? currencyFormatterValorFull(userInfoGeral.totalAporte)
+                    : "******"
+                }
+              >
+                <ListItemText primary="Aportes" />
+              </ListItem>
+              <ListItem
+                disablePadding
+                divider
+                secondaryAction={currencyVisibility ? "Breve" : "******"}
               >
                 <ListItemText primary="Patrimônio" />
               </ListItem>
@@ -512,7 +580,7 @@ function Portifolio(props) {
               <ListItem
                 disablePadding
                 divider
-                secondaryAction={currencyVisibility ? "R$ 90,00" : "******"}
+                secondaryAction={currencyVisibility ? "Breve" : "******"}
               >
                 <ListItemText primary="Lucro/Prejuízo" />
               </ListItem>
@@ -700,7 +768,55 @@ function Portifolio(props) {
                         alignItems: "center",
                       }}
                     >
-                      <Card>{renderAtivoPrice()}</Card>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <div
+                          style={{
+                            width: 45,
+                            height: 45,
+                            marginRight: "0.6em",
+                          }}
+                        >
+                          <img
+                            alt={tabAtivo?.info?.name}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              position: "relative",
+                              objectFit: "contain",
+                            }}
+                            src={tabAtivo?.info?.logo}
+                          />
+                        </div>
+                        <Box sx={{ mr: 1 }}>
+                          <Typography color="text.secondary" variant="h4">
+                            {tabAtivo?.info?.name}
+                          </Typography>
+                        </Box>
+                        <DeleteAtivoDialogWrapper
+                          ativo={tabAtivo}
+                          onCrudEnd={onCrudEnd}
+                          handleOpenSnackBar={handleOpenSnackBar}
+                        />
+                        <Box sx={{ mx: 1 }}>
+                          <MenuExplorer ativo={tabAtivo} />
+                        </Box>
+
+                        {/* <Box>
+                          <Tooltip title="Abrir site oficial do ativo">
+                            <IconButton
+                              onClick={() =>
+                                window.open(
+                                  tabAtivo?.info?.urls?.website[0] || "",
+                                  "_blank"
+                                )
+                              }
+                            >
+                              <LinkIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box> */}
+                      </Box>
+
                       <Card>{renderUserGeralInfo()}</Card>
                     </Box>
 
@@ -712,13 +828,7 @@ function Portifolio(props) {
                         mt: 0.6,
                       }}
                     >
-                      <Box>
-                        <DeleteAtivoDialogWrapper
-                          ativo={userTokenList[tabValue]}
-                          onCrudEnd={onCrudEnd}
-                          handleOpenSnackBar={handleOpenSnackBar}
-                        />
-                      </Box>
+                      <Card>{renderAtivoPrice()}</Card>
 
                       <Box
                         sx={{
@@ -728,45 +838,29 @@ function Portifolio(props) {
                         }}
                       >
                         <Box sx={{ mx: 1 }}>
-                          <OrdemDialog
-                            ativo={userTokenList[tabValue]}
+                          <OrderDialog
+                            ativo={tabAtivo}
                             onCrudEnd={onCrudEnd}
                             handleOpenSnackBar={handleOpenSnackBar}
                             crudType="ADD"
+                            usdPrice={usdPrice}
                           />
                         </Box>
-                        <Box sx={{ mx: 1 }}>
-                          <Tooltip title="Abrir ativo no Coin Market Cap">
-                            <IconButton size="small">
-                              <OpenInNewIcon
-                                variant="outlined"
-                                onClick={() =>
-                                  window.open(
-                                    `https://coinmarketcap.com/currencies/${userTokenList[tabValue].slug}/`,
-                                    "_blank"
-                                  )
-                                }
-                              />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
 
-                        <Box sx={{ mx: 1 }}>
-                          <Tooltip title="Download excel">
-                            <IconButton
-                              size="small"
-                              disabled={orders?.length == 0}
-                            >
-                              <FileDownloadIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
                         <Box sx={{ ml: 1 }}>
-                          <Tooltip title="Gerar relatório">
-                            <IconButton disabled={orders?.length == 0}>
-                              <PictureAsPdfIcon />
-                            </IconButton>
-                          </Tooltip>
+                          <DownloadToXls
+                            url={"http://localhost:3001/rest/json2xls"}
+                            data={dataForDownload}
+                          >
+                            <Tooltip title="Download em excel">
+                              <IconButton disabled={orders?.length == 0}>
+                                <FileDownloadIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </DownloadToXls>
+                        </Box>
+                        <Box sx={{ mx: 1 }}>
+                          <DialogPrintPdf isDisabled={orders?.length == 0} />
                         </Box>
                       </Box>
                     </Box>
@@ -779,8 +873,8 @@ function Portifolio(props) {
                     mt: 0.5,
                     background: "none !important",
                     overflow: "auto",
-                    pr: 2,
-                    pb: 2,
+                    // pr: 2,
+                    // pb: 2,
                   }}
                   elevation={orders.length == 0 && 0}
                 >
@@ -801,20 +895,15 @@ function Portifolio(props) {
                           <LoadingPage />
                         </div>
                       ) : orders.length > 0 ? (
-                        <>
-                          <MyTable
-                            orders={orders}
-                            currencyVisibility={currencyVisibility}
-                            onCrudEnd={onCrudEnd}
-                            handleOpenSnackBar={handleOpenSnackBar}
-                            ativo={userTokenList[tabValue]}
-                          />
-                          <Box sx={{ mt: 3 }}>
-                            <Paper>
-                              <BarChart />
-                            </Paper>
-                          </Box>
-                        </>
+                        <MyTable
+                          orders={orders}
+                          currencyVisibility={currencyVisibility}
+                          onCrudEnd={onCrudEnd}
+                          handleOpenSnackBar={handleOpenSnackBar}
+                          ativo={tabAtivo}
+                          columns={columns}
+                          usdPrice={usdPrice}
+                        />
                       ) : (
                         <Alert severity="warning">
                           Nenhuma ordem cadastrada!

@@ -40,6 +40,8 @@ import {
   ListSubheader,
   Popper,
   DialogActions,
+  DialogContent,
+  Alert,
 } from "@mui/material";
 import { addOrder } from "../../services/orderService";
 import mockedUser from "../../utils/mockedUser";
@@ -72,8 +74,16 @@ function DeleteAtivoDialog({ onClose, open, rest }) {
 
   return (
     <Dialog onClose={handleClose} open={open}>
-      <DialogTitle>Excluir Ativo</DialogTitle>
-      <Box sx={{ p: 2, display: "flex", flexDirection: "column" }}></Box>
+      <DialogTitle>
+        Deseja excluir {ativo?.info?.name}({ativo?.info?.symbol})
+      </DialogTitle>
+
+      <DialogContent>
+        <Alert severity="warning">
+          Será excluído o ativo e todas as ordens do mesmo (as ordens excluídas
+          não poderão ser recuperadas uma vez em que forem excluídas).
+        </Alert>
+      </DialogContent>
 
       <DialogActions>
         <Button color="error" onClick={handleClose}>
@@ -106,15 +116,15 @@ export default function DeleteAtivoDialogWrapper(props) {
 
   return (
     <div>
-      <Button
+      <IconButton
         onClick={handleClickOpen}
-        startIcon={<DeleteIcon />}
+        // startIcon={<DeleteIcon />}
         size="small"
         color="error"
         variant="outlined"
       >
-        Excluir Ativo
-      </Button>
+        <DeleteIcon />
+      </IconButton>
 
       <DeleteAtivoDialog
         open={open}

@@ -12,7 +12,7 @@ import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import Paper from "@mui/material/Paper";
 import { visuallyHidden } from "@mui/utils";
-import OrdemDialogWrapper from "./OrdemDialog";
+import OrderDialogWrapper from "./OrderDialog";
 import moment from "moment";
 import {
   currencyFormatterValorFull,
@@ -100,6 +100,8 @@ export default function EnhancedTable({
   onCrudEnd,
   handleOpenSnackBar,
   ativo,
+  columns,
+  usdPrice,
 }) {
   const [order, setOrder] = React.useState("asc");
   const [orderBy, setOrderBy] = React.useState("calories");
@@ -121,45 +123,13 @@ export default function EnhancedTable({
     setPage(0);
   };
 
-  const headCells = [
-    {
-      id: "data_compra",
-      disablePadding: true,
-      label: "Data da compra",
-    },
-    {
-      id: "cotacao_na_compra",
-
-      disablePadding: false,
-      label: "Cotação na compra",
-    },
-    {
-      id: "aporte",
-
-      disablePadding: false,
-      label: "Aporte",
-    },
-    {
-      id: "saldo",
-
-      disablePadding: false,
-      label: "Saldo",
-    },
-    {
-      id: "actions",
-
-      disablePadding: false,
-      label: "Ação",
-    },
-  ];
-
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - orders.length) : 0;
 
   return (
     <Paper>
-      <TableContainer sx={{ minWidth: 100, height: "calc(100vh - 418px)" }}>
+      <TableContainer sx={{ minWidth: 100, height: "calc(100vh - 340px)" }}>
         {/* <TableContainer sx={{ minWidth: 100 }}> */}
         <Table stickyHeader aria-label="sticky table" size="small">
           <EnhancedTableHead
@@ -167,7 +137,7 @@ export default function EnhancedTable({
             orderBy={orderBy}
             onRequestSort={handleRequestSort}
             rowCount={orders.length}
-            headCells={headCells}
+            headCells={columns}
           />
           <TableBody>
             {stableSort(orders, getComparator(order, orderBy))
@@ -204,18 +174,20 @@ export default function EnhancedTable({
                           m: 0,
                         }}
                       >
-                        <OrdemDialogWrapper
+                        <OrderDialogWrapper
                           crudType="DELETE"
                           order={row}
                           onCrudEnd={onCrudEnd}
                           handleOpenSnackBar={handleOpenSnackBar}
+                          usdPrice={usdPrice}
                         />
-                        <OrdemDialogWrapper
+                        <OrderDialogWrapper
                           crudType="EDIT"
                           order={row}
                           ativo={ativo}
                           onCrudEnd={onCrudEnd}
                           handleOpenSnackBar={handleOpenSnackBar}
+                          usdPrice={usdPrice}
                         />
                       </Box>
                     </TableCell>
