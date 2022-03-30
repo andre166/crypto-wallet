@@ -64,7 +64,7 @@ import DolContext from "../../context/DollarContext";
 import DownloadToXls from "../../Components/DownloadToXls";
 import DialogPrintPdf from "./DialogPrintPdf";
 import MenuExplorer from "./MenuExplorer";
-import LinkIcon from "@mui/icons-material/Link";
+import { getAtivoValues } from "./portifolioHelpers";
 
 const columns = [
   {
@@ -165,6 +165,7 @@ function Portifolio(props) {
     open: false,
     severity: "",
     message: "",
+    time: 3000,
   });
 
   const tabAtivo = userTokenList[tabValue];
@@ -172,6 +173,15 @@ function Portifolio(props) {
   useEffect(() => {
     loadPage();
   }, []);
+
+  const setTokenValues = ({ userTokens, tokensGeral }) => {
+    userTokens.map((e) => {
+      let token = tokensGeral?.find((t) => t.id == e.cmc_id);
+      if (token) {
+        e.info = { ...e.info, ...token };
+      }
+    });
+  };
 
   const loadPage = async () => {
     let userID = mockedUser().id;
@@ -196,11 +206,9 @@ function Portifolio(props) {
     let countResp = {};
 
     if (values[1]?.length > 0) {
-      values[1].map((e) => {
-        let token = values[0]?.data.find((t) => t.id == e.cmc_id);
-        if (token) {
-          e.info = { ...e.info, ...token };
-        }
+      setTokenValues({
+        tokensGeral: values[0]?.data || [],
+        userTokens: values[1],
       });
 
       ordersResp = await getOrderList(userID, values[1][0].id_user_cripto);
@@ -220,11 +228,12 @@ function Portifolio(props) {
     setLoading(false);
   };
 
-  const handleOpenSnackBar = (open, severity, message) => {
+  const handleOpenSnackBar = (open, severity, message, time) => {
     setAlert({
       open,
       severity,
       message,
+      time,
     });
   };
 
@@ -272,6 +281,9 @@ function Portifolio(props) {
 
     if (type == "ativo") {
       const resp = await getUserTokenList(userID);
+
+      setTokenValues({ tokensGeral: tokenList, userTokens: resp });
+
       setUserTokenList(resp);
       return;
     }
@@ -362,8 +374,8 @@ function Portifolio(props) {
   );
 
   const renderAtivoPrice = () => {
-    let price = parseFloat(tabAtivo?.info?.quote?.USD?.price.toFixed(2));
-    let valorAtual = parseFloat((price * usdPrice).toFixed(2));
+    const { valorAtual } = getAtivoValues(tabAtivo, usdPrice);
+
     let oneHour =
       tabAtivo?.info?.quote?.USD?.percent_change_1h?.toFixed(2) + "%";
     let oneWeek =
@@ -380,6 +392,8 @@ function Portifolio(props) {
     let isZeroOneHour = oneHour.match(zeroRegex);
     let isZeroOneDay = oneDay.match(zeroRegex);
     let isZeroOneWeek = oneWeek.match(zeroRegex);
+
+    console.log("valorAtual", valorAtual);
 
     return (
       <Box sx={{ p: 1, display: "flex" }}>
@@ -415,22 +429,24 @@ function Portifolio(props) {
   };
 
   const renderUserGeralInfo = () => {
-    let price = tabAtivo?.info?.quote?.USD?.price;
+    let { price, valorAtual } = getAtivoValues(tabAtivo, usdPrice);
+
     const { mediaAporte = 0, saldo = 0, totalAporte = 0 } = userAporteInfo;
-    let ativoPrice = price * usdPrice;
 
-    let valorAtual = price * usdPrice;
+    let isBiggerMedia = mediaAporte > valorAtual;
 
-    let isBiggerMedia = mediaAporte > ativoPrice;
+    console.log("mediaAporte", mediaAporte);
+    console.log("price", price);
+    console.log("isBiggerMedia", isBiggerMedia);
 
-    valorAtual = valorAtual * saldo;
+    let valorAtualTotal = valorAtual * saldo;
 
-    let isBiggerValorAtual = valorAtual > totalAporte;
-    let diference = valorAtual - totalAporte;
+    let isBiggerValorAtual = valorAtualTotal > totalAporte;
+    let diference = valorAtualTotal - totalAporte;
 
     let isLucro = diference.toString().charAt(0) !== "-";
 
-    let isZeroValorAtual = valorAtual == 0;
+    let isZeroValorAtual = valorAtualTotal == 0;
     let isZeroDiference = diference == 0;
     let isZeroMediaAporte = mediaAporte == 0 || !mediaAporte;
 
@@ -444,7 +460,7 @@ function Portifolio(props) {
         />
         <InfoAtivoPrice
           title="Valor atual"
-          subtitle={currencyFormatterValorFull(valorAtual)}
+          subtitle={currencyFormatterValorFull(valorAtualTotal)}
           isBiggerComparison={isBiggerValorAtual}
           isZero={isZeroValorAtual}
           noPercent={isZeroValorAtual}
@@ -923,7 +939,7 @@ function Portifolio(props) {
       </div>
       <Snackbar
         open={alert.open}
-        autoHideDuration={3000}
+        autoHideDuration={alert.time || 3000}
         onClose={handleCloseSnackBar}
       >
         <Alert

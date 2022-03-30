@@ -61,11 +61,15 @@ class UserTokenController {
     let hasDiference = false;
 
     if (redisUserTokenList) {
-      userTokenList.map((e, i) => {
-        if (redisUserTokenList[i].cmc_id !== e.cmc_id) {
-          hasDiference = true;
-        }
-      });
+      if (userTokenList.length !== redisUserTokenList.length) {
+        hasDiference = true;
+      } else {
+        userTokenList.map((e, i) => {
+          if (redisUserTokenList[i].cmc_id !== e.cmc_id) {
+            hasDiference = true;
+          }
+        });
+      }
     } else {
       hasDiference = true;
     }

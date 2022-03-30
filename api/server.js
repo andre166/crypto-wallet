@@ -21,8 +21,7 @@ const PORT = 3001;
 
 io.on("connection", (socket) => {
   socket.on("client", (...args) => {
-    socket.emit("client", "texto do server");
-    console.log("sokcet on server", args);
+    // socket.emit("client", "texto do server");
   });
 });
 

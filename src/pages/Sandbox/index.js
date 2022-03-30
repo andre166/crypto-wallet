@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Button,
   Card,
@@ -20,44 +20,57 @@ import {
   MenuItem,
   Menu,
   FormGroup,
+  Tabs,
+  Tab,
+  Paper,
 } from "@mui/material";
-import { jsonToExcel } from "../../services/rest/json2xls";
-import DownloadToXls from "../../Components/DownloadToXls";
 
-var jsonArr = [
-  {
-    foo: "bar",
-    qux: "moo",
-    poo: 123,
-    stux: new Date(),
-  },
-  {
-    foo: "bar",
-    qux: "moo",
-    poo: 345,
-    stux: new Date(),
-  },
-];
+import AtivoModel from "../../model/AtivoModel";
+import ClassGenerator from "./ClassGenerator";
+import TesteSandBox from "./TesteSandBox";
+
+const pages = ["Free", "Class generator"];
 
 function SandBox() {
-  const teste = async () => {
-    let resp = await jsonToExcel();
-    console.log("resp", resp);
+  const [tabValue, setTabValue] = useState(0);
+  const handleChangeTab = (event, newValue) => {
+    setTabValue(newValue);
   };
+
+  const renderTab = () => {
+    if (tabValue == 0) {
+      return <TesteSandBox />;
+    } else if (tabValue == 1) {
+      return <ClassGenerator />;
+    }
+  };
+
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <Box sx={{ m: 4 }}>
-        <DownloadToXls
-          url={"http://localhost:3001/rest/json2xls"}
-          data={jsonArr}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        p: 2,
+        background: tabValue == 1 && "#212121",
+        overflow: "hidden",
+      }}
+    >
+      <Paper sx={{ mb: 2 }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleChangeTab}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ width: "100%", position: "relative" }}
         >
-          <Button>Clicka</Button>
-        </DownloadToXls>
-        <Button variant="contained" color="primary" onClick={teste}>
-          Teste
-        </Button>
-      </Box>
-      SandBox
+          {pages.map((e) => (
+            <Tab key={`e#67a76s5-${e}`} label={e} />
+          ))}
+        </Tabs>
+      </Paper>
+
+      {renderTab()}
     </Box>
   );
 }

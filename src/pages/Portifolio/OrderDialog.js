@@ -76,7 +76,7 @@ function OrdemDialog({ onClose, open, rest }) {
     await deleteOrder(orderID);
     await onCrudEnd("ordem");
     handleClose();
-    handleOpenSnackBar(true, "success", "Ordem excluída com sucesso!");
+    handleOpenSnackBar(true, "success", "Ordem excluída com sucesso!", 3000);
   };
 
   const orderModel = (
@@ -87,7 +87,7 @@ function OrdemDialog({ onClose, open, rest }) {
       cotacao_na_compra,
       saldo,
       fk_user_cripto,
-      user_fk,
+      fk_user,
     } = {},
     ...rest
   ) => {
@@ -96,13 +96,11 @@ function OrdemDialog({ onClose, open, rest }) {
       data_compra: data_compra
         ? moment(data_compra).format("YYYY-MM-DD")
         : null,
-      aporte: aporte ? currencyToFloat(aporte) : null,
-      cotacao_na_compra: cotacao_na_compra
-        ? currencyToFloat(cotacao_na_compra)
-        : null,
-      saldo: saldo || null,
+      aporte: aporte ? currencyToFloat(aporte) : 0,
+      cotacao_na_compra: cotacao_na_compra ? parseFloat(cotacao_na_compra) : 0,
+      saldo: saldo || 0,
       fk_user_cripto: fk_user_cripto || null,
-      user_fk: user_fk || null,
+      fk_user: fk_user || null,
     };
 
     return params;
@@ -110,13 +108,17 @@ function OrdemDialog({ onClose, open, rest }) {
 
   const onSubmit = async (values) => {
     let saldo = generateSaldo(values.aporte, values.cotacao_na_compra);
+    let resp = null;
 
     let params = {
       id_order: null,
       saldo,
       fk_user_cripto: ativo?.id_user_cripto,
-      user_fk: mockedUser().id,
+      fk_user: mockedUser().id,
     };
+
+    let objOrder = { ...values, ...params };
+    let o = orderModel(objOrder);
 
     if (crudType === "EDIT") {
       let orderID = order.id_order;
@@ -124,12 +126,19 @@ function OrdemDialog({ onClose, open, rest }) {
 
       let objOrder = { ...values, ...params };
       let o = orderModel(objOrder);
-      await delete o["user_fk"];
+      await delete o["fk_user"];
 
-      await patchOrder(o);
+      resp = await patchOrder(o);
     } else {
       let o = orderModel({ ...values, ...params });
-      await addOrder(o);
+      resp = await addOrder(o);
+    }
+
+    console.log("resp", resp);
+
+    if (resp.Error) {
+      handleOpenSnackBar(true, "error", resp.Error, 6000);
+      return;
     }
 
     await onCrudEnd("ordem");
@@ -149,14 +158,18 @@ function OrdemDialog({ onClose, open, rest }) {
     EDIT: "Editar ordem",
   };
 
-  const generateSaldo = (aporte, cotacao) => {
+  const generateSaldo = (aporte, cotacao, returnType) => {
     let n1 = currencyToFloat(aporte);
-    let n2 = currencyToFloat(cotacao);
+    let n2 = parseFloat(cotacao);
 
     let s = n1 / n2;
 
     if (!s || s == "Infinity") {
       s = 0;
+    }
+
+    if (returnType == "string") {
+      s = currencyFormatterValorFull(s, "decimal");
     }
     return s || 0;
   };
@@ -176,9 +189,7 @@ function OrdemDialog({ onClose, open, rest }) {
                 ? currencyFormatter(order.aporte * 100)
                 : currencyFormatter(0),
             cotacao_na_compra:
-              crudType === "EDIT"
-                ? currencyFormatter(order.cotacao_na_compra * 100)
-                : currencyFormatter(0),
+              crudType === "EDIT" ? order.cotacao_na_compra : 0,
           }}
           render={({ values, handleChange, handleSubmit, setFieldValue }) => (
             <Form onSubmit={handleSubmit} noValidate autocomplete="off">
@@ -244,10 +255,11 @@ function OrdemDialog({ onClose, open, rest }) {
                     endIcon={<div>a</div>}
                     label="Cotação na compra"
                     variant="outlined"
-                    format={(e) => currencyFormatter(e)}
-                    value={values.cotacao_na_compra}
+                    // format={(e) => currencyFormatter(e, "currency", 2, 7)}
+                    // value={values.cotacao_na_compra}
+                    value={parseFloat(values.cotacao_na_compra || 0)}
                     name="cotacao_na_compra"
-                    thousandSeparator
+                    // thousandSeparator
                     onChange={handleChange}
                     customInput={TextField}
                     margin="dense"
@@ -260,8 +272,9 @@ function OrdemDialog({ onClose, open, rest }) {
                   Saldo:{" "}
                   {generateSaldo(
                     values.aporte,
-                    values.cotacao_na_compra
-                  ).toFixed(2)}
+                    values.cotacao_na_compra,
+                    "string"
+                  )}
                 </Box>
               </Box>
 
@@ -272,16 +285,10 @@ function OrdemDialog({ onClose, open, rest }) {
 
                 <Button
                   variant="contained"
-                  // onClick={() => onSubmit(values)}
-                  type="submit"
                   disabled={
-                    !values.data_compra ||
-                    dateError ||
-                    values.cotacao_na_compra < 0 ||
-                    values.aporte.cotacao_na_compra == 0 ||
-                    values.aporte < 0 ||
-                    values.aporte.length == 0
+                    generateSaldo(values.aporte, values.cotacao_na_compra) <= 0
                   }
+                  type="submit"
                 >
                   {crudType === "ADD" ? "Cadastrar" : "Editar"}
                 </Button>

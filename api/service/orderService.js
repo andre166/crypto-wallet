@@ -1,15 +1,14 @@
 import generateQueryArray from "../utils/generateQueryArray.js";
-
-// id_order int AI PK
-// data_compra date
-// aporte float
-// cotacao_na_compra float
-// saldo float
-// fk_user_cripto_ativos int
-// fk_user int
+import OrderModel from "../model/OrderModel.js";
 
 const addOrder = async (params, syncQuery) => {
-  const { arr, quantParams } = generateQueryArray(params);
+  let m = new OrderModel(params);
+
+  const { Error, arr, quantParams } = m.getPutParams();
+
+  if (Error) {
+    return Error;
+  }
 
   return syncQuery(`insert into orders values ${quantParams}`, arr);
 };

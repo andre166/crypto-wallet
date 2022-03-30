@@ -1,10 +1,9 @@
-import generateQueryArray from "../utils/generateQueryArray.js";
+import AtivoModel from "../model/AtivoModel.js";
 
-// id_user_cripto
-// cmc_id int
-// user_fk int
 const addToken = async (params, syncQuery) => {
-  const { arr, quantParams } = generateQueryArray(params);
+  let ativoModel = new AtivoModel(params);
+
+  const { arr, quantParams } = ativoModel.getPutParams();
 
   return syncQuery(`insert into user_cripto values ${quantParams}`, arr);
 };

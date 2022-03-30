@@ -28,6 +28,8 @@ const currencyFormatter = (value, style) => {
     maximumFractionDigits: isLargeFraction ? 7 : 2,
   }).format(value / 100);
 
+  // .format(value / 100);
+
   return `${amount}`;
 };
 

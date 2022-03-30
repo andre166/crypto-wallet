@@ -179,7 +179,7 @@ function SimpleDialog({ onClose, open, rest }) {
     await addTokenOnUser(params);
     await onCrudEnd("ativo");
     handleClose();
-    handleOpenSnackBar(true, "success", "Ativo cadastrado com sucesso!");
+    handleOpenSnackBar(true, "success", "Ativo cadastrado com sucesso!", 3000);
   };
 
   return (

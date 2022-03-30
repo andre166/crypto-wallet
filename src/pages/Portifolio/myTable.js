@@ -19,6 +19,7 @@ import {
   currencyFormatter,
   FloatToBrlNumber,
 } from "../../utils/currencyHelpers";
+import { getAtivoValues } from "./portifolioHelpers";
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -127,6 +128,8 @@ export default function EnhancedTable({
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - orders.length) : 0;
 
+  const { valorAtual } = getAtivoValues(ativo, usdPrice);
+
   return (
     <Paper>
       <TableContainer sx={{ minWidth: 100, height: "calc(100vh - 340px)" }}>
@@ -150,7 +153,17 @@ export default function EnhancedTable({
                     <TableCell align="center" id={labelId}>
                       {moment(row.data_compra).format("DD/MM/YYYY")}
                     </TableCell>
-                    <TableCell align="center">
+                    <TableCell
+                      align="center"
+                      sx={{
+                        color:
+                          valorAtual == row.cotacao_na_compra
+                            ? "#000"
+                            : valorAtual > row.cotacao_na_compra
+                            ? "success.main"
+                            : "error.main",
+                      }}
+                    >
                       {currencyFormatterValorFull(row.cotacao_na_compra)}
                     </TableCell>
                     <TableCell align="center">

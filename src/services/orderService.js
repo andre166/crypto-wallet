@@ -30,7 +30,10 @@ const deleteOrder = async (orderID) => {
 const patchOrder = async (order) => {
   const response = await axios
     .patch(`${localHost}${PATH}patch`, order)
-    .catch((error) => error);
+    .catch((error) => {
+      console.log(error);
+      return error;
+    });
 
   return response.data;
 };

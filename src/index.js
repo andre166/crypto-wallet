@@ -7,7 +7,7 @@ const socket = io("ws://localhost:3003");
 
 const ID = Math.random();
 
-socket.emit("client", "texto do cliente");
+// socket.emit("client", "texto do cliente");
 socket.on("client", (...args) => {
   console.log("socket on client", args);
 });
